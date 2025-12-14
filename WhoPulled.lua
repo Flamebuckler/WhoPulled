@@ -159,7 +159,8 @@ local function DeterminePuller()
     end
 
     if not currentBoss or currentBoss == "" then
-        currentBoss = "Boss"
+        currentBoss = "Trash"
+        return
     end
 
     -- Output
