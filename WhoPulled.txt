@@ -1,0 +1,9 @@
+## Title: WhoPulled
+## APIVersion: 101048
+## Author: Flamebuckler
+## Version: 0.1.0
+## Description: Shows who was the first to damage the boss
+## SavedVariables: WhoPulledSavedVars
+## DependsOn: LibGroupCombatStats
+
+WhoPulled.lua
