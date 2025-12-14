@@ -7,16 +7,16 @@
 local EM = GetEventManager()
 local lgcs = nil -- LibGroupCombatStats Object
 
--- Event Konstanten (werden in Initialize() gesetzt)
+-- Event constants (set in Initialize())
 local EVENT_GROUP_DPS_UPDATE = nil
 local EVENT_PLAYER_DPS_UPDATE = nil
 
--- Lokale Variablen
+-- Local variables
 local currentBoss = nil
 local pullDetected = false
 local combatStartTime = 0
-local PULL_DETECTION_WINDOW = 5000 -- 5 Sekunden nach Combat Start
-local firstHitData = {}            -- Speichert wer wann den ersten Schaden gemacht hat
+local PULL_DETECTION_WINDOW = 5000 -- 5 seconds after combat start
+local firstHitData = {}            -- Stores who dealt the first damage and when
 
 -- Saved Variables
 local savedVars = nil
@@ -24,28 +24,28 @@ local defaultSettings = {
     enabled = true,
     showInChat = true,
     debugMode = false,
-    detectionWindow = 5000, -- Konfigurierbar
+    detectionWindow = 5000, -- Configurable
 }
 
--- Forward-Deklarationen
+-- Forward declarations
 local OnCombatStart
 local CreateSettingsMenu
 
--- Hilfsfunktion: Debug-Ausgabe
+-- Helper function: Debug output
 local function DebugLog(...)
     if savedVars and savedVars.debugMode then
         d(string.format("[WhoPulled Debug] %s", string.format(...)))
     end
 end
 
--- Hilfsfunktion: Nachricht im Chat ausgeben
+-- Helper function: Print message to chat
 local function PrintMessage(message)
     if savedVars and savedVars.showInChat then
         d(string.format("|c00FF00[WhoPulled]|r %s", message))
     end
 end
 
--- Callback fuer Gruppen-DPS-Updates von LibGroupCombatStats
+-- Callback for group DPS updates from LibGroupCombatStats
 local function OnGroupDPSUpdate(unitTag, dpsData)
     DebugLog("[OnGroupDPSUpdate] Called - unitTag: %s", tostring(unitTag))
 
@@ -58,10 +58,10 @@ local function OnGroupDPSUpdate(unitTag, dpsData)
         return
     end
 
-    -- Pruefe ob wir im Detektionsfenster sind
+    -- Check if we're within the detection window
     local currentTime = GetGameTimeMilliseconds()
 
-    -- Wenn noch kein Combat gestartet wurde, starte jetzt (erster DPS-Hit)
+    -- If combat hasn't started yet, start it now (first DPS hit)
     if combatStartTime == 0 then
         DebugLog("  -> Combat started via DPS update!")
         OnCombatStart()
@@ -76,7 +76,7 @@ local function OnGroupDPSUpdate(unitTag, dpsData)
         return
     end
 
-    -- Pruefe ob es neuer Schaden ist (nicht 0)
+    -- Check if there's new damage (not 0)
     DebugLog("  DPS Data: dps=%s, dmg=%s, dmgType=%s", tostring(dpsData.dps), tostring(dpsData.dmg),
         tostring(dpsData.dmgType))
 
@@ -93,7 +93,7 @@ local function OnGroupDPSUpdate(unitTag, dpsData)
     DebugLog("Unit: %s (%s)", tostring(characterName), tostring(displayName))
     DebugLog("DPS: %d, Total DMG: %d, time since combat: %dms", dpsData.dps, dpsData.dmg, timeSinceCombatStart)
 
-    -- Speichere Daten fuer den ersten Hit
+    -- Store data for the first hit
     if not firstHitData[characterName] then
         firstHitData[characterName] = {
             timestamp = currentTime,
@@ -111,7 +111,7 @@ local function DeterminePuller()
     DebugLog("[DeterminePuller] Called")
 
     if pullDetected then
-        DebugLog("  -> Abbruch: Pull bereits erkannt")
+        DebugLog("  -> Abort: pull already detected")
         return
     end
 
@@ -162,7 +162,7 @@ local function DeterminePuller()
         currentBoss = "Boss"
     end
 
-    -- Ausgabe
+    -- Output
     local message
     local displayNameToShow = pullerDisplayName ~= "" and pullerDisplayName or pullerName
 
@@ -180,7 +180,7 @@ local function DeterminePuller()
     DebugLog("Time: %dms after combat start", earliestTime - combatStartTime)
 end
 
--- Handler fuer Combat Start
+-- Handler for Combat Start
 OnCombatStart = function()
     local timestamp = GetGameTimeMilliseconds()
     DebugLog("")
@@ -206,7 +206,7 @@ OnCombatStart = function()
     end, PULL_DETECTION_WINDOW + 100)
 end
 
--- Handler fuer Combat End
+-- Handler for Combat End
 local function OnCombatEnd()
     DebugLog("=== Combat End detected ===")
     DebugLog("Pull detected: %s, Boss: %s", tostring(pullDetected), tostring(currentBoss))
@@ -225,34 +225,34 @@ local function Initialize()
     savedVars = ZO_SavedVars:NewAccountWide("WhoPulledSavedVars", 1, nil, defaultSettings)
     PULL_DETECTION_WINDOW = savedVars.detectionWindow or 5000
 
-    DebugLog("WhoPulled initialisiert (Version %s)", WhoPulled.version)
+    DebugLog("WhoPulled initialized (Version %s)", WhoPulled.version)
 
     lgcs = LibGroupCombatStats.RegisterAddon(WhoPulled.name, { "DPS" })
     if not lgcs then
-        d("|cFF0000[WhoPulled]|r Fehler: LibGroupCombatStats nicht gefunden!")
+        d("|cFF0000[WhoPulled]|r Error: LibGroupCombatStats not found!")
         return
     end
 
-    DebugLog("LibGroupCombatStats Registrierung erfolgreich")
+    DebugLog("LibGroupCombatStats registration successful")
 
-    -- Setze Event-Konstanten nachdem LibGroupCombatStats verfuegbar ist
+    -- Set event constants after LibGroupCombatStats becomes available
     EVENT_GROUP_DPS_UPDATE = LibGroupCombatStats.EVENT_GROUP_DPS_UPDATE
     EVENT_PLAYER_DPS_UPDATE = LibGroupCombatStats.EVENT_PLAYER_DPS_UPDATE
-    DebugLog("Event-Konstanten gesetzt: GROUP=%s, PLAYER=%s", tostring(EVENT_GROUP_DPS_UPDATE),
+    DebugLog("Event constants set: GROUP=%s, PLAYER=%s", tostring(EVENT_GROUP_DPS_UPDATE),
         tostring(EVENT_PLAYER_DPS_UPDATE))
 
     lgcs:RegisterForEvent(EVENT_GROUP_DPS_UPDATE, OnGroupDPSUpdate)
-    DebugLog("EVENT_GROUP_DPS_UPDATE Callback registriert")
+    DebugLog("EVENT_GROUP_DPS_UPDATE callback registered")
 
     lgcs:RegisterForEvent(EVENT_PLAYER_DPS_UPDATE, OnGroupDPSUpdate)
-    DebugLog("EVENT_PLAYER_DPS_UPDATE Callback registriert")
+    DebugLog("EVENT_PLAYER_DPS_UPDATE callback registered")
 
     EM:RegisterForEvent(WhoPulled.name .. "_PlayerCombat", EVENT_PLAYER_COMBAT_STATE, function(_, inCombat)
         if not savedVars.enabled then return end
         if inCombat then OnCombatStart() else OnCombatEnd() end
     end)
 
-    DebugLog("Combat Event-Handler aktiviert")
+    DebugLog("Combat event handler activated")
 
     SLASH_COMMANDS["/whopulled"] = function(cmd)
         if cmd == "toggle" then
